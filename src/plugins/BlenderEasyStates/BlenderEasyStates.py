@@ -11,6 +11,19 @@ def GetDeadlinePlugin():
 def CleanupDeadlinePlugin( deadlinePlugin ):
     deadlinePlugin.Cleanup()
     
+def _easystates_render_python_expr(scene_state_id, frame_start, frame_end):
+    """
+    Returns a Python expression to be used with Blender's -P argument
+    to set up the scene for rendering with EasyStates.
+    """
+    return (
+        "import bpy, addon_utils\n"
+        "if not hasattr(bpy.context.scene, 'easystates_manager'):\n"
+        "    print('EasyStates add-on is not enabled.')\n"
+        "else:\n"
+        "    bpy.ops.easystates.single_render(id={scene_state_id}, background_render=True, frame_start={frame_start}, frame_end={frame_end})\n"
+    ).format(scene_state_id=repr(scene_state_id), frame_start=frame_start, frame_end=frame_end)
+    
 class BlenderPlugin(DeadlinePlugin):
     frameCount = 0
     finishedFrameCount = 0
@@ -45,6 +58,7 @@ class BlenderPlugin(DeadlinePlugin):
         self.AddStdoutHandlerCallback("Unable to open.*").HandleCallback += self.HandleStdoutFailed
         self.AddStdoutHandlerCallback("Failed to read blend file.*").HandleCallback += self.HandleStdoutFailed
         self.AddStdoutHandlerCallback(".*Unable to create directory.*").HandleCallback += self.HandleStdoutFailed
+        self.AddStdoutHandlerCallback(".*EasyStates add-on is not enabled.*").HandleCallback += self.HandleStdoutError
     
     def RenderExecutable(self):
         build = self.GetPluginInfoEntryWithDefault( "Build", "None" ).lower()
@@ -74,7 +88,10 @@ class BlenderPlugin(DeadlinePlugin):
         return executable
         
     def RenderArgument(self):
+        
         sceneFile = self.GetPluginInfoEntryWithDefault( "SceneFile", self.GetDataFilename() )
+        sceneStateID = self.GetPluginInfoEntryWithDefault( "SceneStateID", "" )
+        
         sceneFile = RepositoryUtils.CheckPathMapping( sceneFile )
         if SystemUtils.IsRunningOnWindows():
             sceneFile = sceneFile.replace( "/", "\\" )
@@ -84,19 +101,23 @@ class BlenderPlugin(DeadlinePlugin):
             sceneFile = sceneFile.replace( "\\", "/" )
         
         renderArgument = " -b \"" + sceneFile + "\""
-        renderArgument += " -t " + self.GetPluginInfoEntryWithDefault( "Threads", "0" )
+        renderArgument += " --python-expr \"" + _easystates_render_python_expr(
+            sceneStateID,
+            self.GetStartFrame(),
+            self.GetEndFrame()
+        ).strip().replace('"', '\\"') + "\""
         
-        outputFile = self.GetPluginInfoEntryWithDefault( "OutputFile", "" )
-        outputFile = RepositoryUtils.CheckPathMapping( outputFile )
-        if SystemUtils.IsRunningOnWindows():
-            outputFile = outputFile.replace( "/", "\\" )
-            if outputFile.startswith( "\\" ) and not outputFile.startswith( "\\\\" ):
-                outputFile = "\\" + outputFile
-        else:
-            outputFile = outputFile.replace( "\\", "/" )
+        # outputFile = self.GetPluginInfoEntryWithDefault( "OutputFile", "" )
+        # outputFile = RepositoryUtils.CheckPathMapping( outputFile )
+        # if SystemUtils.IsRunningOnWindows():
+        #     outputFile = outputFile.replace( "/", "\\" )
+        #     if outputFile.startswith( "\\" ) and not outputFile.startswith( "\\\\" ):
+        #         outputFile = "\\" + outputFile
+        # else:
+        #     outputFile = outputFile.replace( "\\", "/" )
         
-        renderArgument += StringUtils.BlankIfEitherIsBlank( " -x 1 -o \"", StringUtils.BlankIfEitherIsBlank( outputFile, "\"" ) )
-        renderArgument += " -s " + str(self.GetStartFrame()) + " -e " + str(self.GetEndFrame()) + " -a "
+        # renderArgument += StringUtils.BlankIfEitherIsBlank( " -x 1 -o \"", StringUtils.BlankIfEitherIsBlank( outputFile, "\"" ) )
+        # renderArgument += " -s " + str(self.GetStartFrame()) + " -e " + str(self.GetEndFrame()) + " -a "
         
         return renderArgument
         

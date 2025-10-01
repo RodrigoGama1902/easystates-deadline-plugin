@@ -45,7 +45,7 @@ class SubmitToDeadline_Operator (bpy.types.Operator):
         if ezs_manager is None:
             raise Exception("EZS Manager not found on the scene, make sure you have the EasyStates addon enabled.")
                 
-        render_states : list[tuple[str, str]] = [] # [(state name, frame range),]  
+        render_states : list[tuple[str, str, str]] = [] # [(state name, frame range, scene_state_id),]  
         for state in ezs_manager.scene_states: # type:ignore
             if not state.render:
                 continue
@@ -56,12 +56,12 @@ class SubmitToDeadline_Operator (bpy.types.Operator):
                 if state.animation_modifier.frame_start != state.animation_modifier.frame_end:
                     _frame_range = f"{_frame_range}-{state.animation_modifier.frame_end}"
             
-            render_states.append((state.name, str(_frame_range)))
+            render_states.append((state.name, str(_frame_range), state.id))
             
         txt_file = Path(tempfile.gettempdir()) / f"{uuid.uuid4().hex}.txt"
         with open(txt_file, 'w', encoding='utf-8') as f:
-            for state_name, frame_range in render_states:
-                f.write(f"{state_name}|{frame_range}\n")
+            for state_name, frame_range, scene_state_id in render_states:
+                f.write(f"{state_name}|{frame_range}|{scene_state_id}\n")
                 
         return txt_file
     

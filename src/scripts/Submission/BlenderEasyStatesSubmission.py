@@ -216,14 +216,14 @@ def SubmitButtonPressed(*args):
             return
     
     # Check output file
-    if outputFile != "":
-        if(not Directory.Exists(Path.GetDirectoryName(outputFile))):
-            scriptDialog.ShowMessageBox( "The directory of the output file %s does not exist." % Path.GetDirectoryName(outputFile), "Error" )
-            return
-        elif( PathUtils.IsPathLocal(outputFile) ):
-            result = scriptDialog.ShowMessageBox( "The output file %s is local. Are you sure you want to continue?" % outputFile, "Warning", ("Yes","No") )
-            if(result=="No"):
-                return
+    # if outputFile != "":
+    #     if(not Directory.Exists(Path.GetDirectoryName(outputFile))):
+    #         scriptDialog.ShowMessageBox( "The directory of the output file %s does not exist." % Path.GetDirectoryName(outputFile), "Error" )
+    #         return
+    #     elif( PathUtils.IsPathLocal(outputFile) ):
+    #         result = scriptDialog.ShowMessageBox( "The output file %s is local. Are you sure you want to continue?" % outputFile, "Warning", ("Yes","No") )
+    #         if(result=="No"):
+    #             return
             
     scene_states = []
     with open(StatesFile, 'r') as f:
@@ -241,7 +241,7 @@ def SubmitButtonPressed(*args):
     for state in scene_states:
         # ['Scene State 2\n', 'Scene State 3\n', 'Scene State 5\n', 'Scene State 6\n']
         # convert to 'Scene State 2', 'Scene State 3', etc
-        state_name, frame_list = state.strip().split("|")
+        state_name, frame_list, state_id = state.strip().split("|")
 
         if state == "":
             continue
@@ -312,12 +312,13 @@ def SubmitButtonPressed(*args):
         if(not scriptDialog.GetValue("SubmitSceneBox")):
             writer.WriteLine("SceneFile=" + sceneFile)
         
-        if outputFile != "":
-            writer.WriteLine( "OutputFile=%s" % outputFile )
+        # if outputFile != "":
+        #     writer.WriteLine( "OutputFile=%s" % outputFile )
         
         writer.WriteLine( "Threads=%s" % scriptDialog.GetValue( "ThreadsBox" ) )
         writer.WriteLine( "Build=%s" % scriptDialog.GetValue( "BuildBox" ) )
-        
+        writer.WriteLine( "SceneStateID=%s" % state_id )
+
         writer.Close()
         
         # Setup the command line arguments.

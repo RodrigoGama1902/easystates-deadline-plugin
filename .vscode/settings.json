@@ -1,6 +1,6 @@
 {
-    "blender.addon.moduleName": "easystates-deadline-submitter",
-    "blender.addon.sourceDirectory": "src/blender-addon/easystates-deadline-submitter",
-    "blender.addon.loadDirectory": "src/blender-addon/easystates-deadline-submitter",
+    "blender.addon.moduleName": "EasyStatesDeadlineSubmitter",
+    "blender.addon.sourceDirectory": "src/submission/BlenderEasyStates/Client",
+    "blender.addon.loadDirectory": "src/submission/BlenderEasyStates/Client",
     "editor.formatOnSave": false
 }

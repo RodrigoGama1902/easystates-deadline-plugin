@@ -16,3 +16,7 @@ reportUntypedFunctionDecorator = false
 
 pythonVersion = "3.11"
 pythonPlatform = "Windows"
+
+pythonpath = [
+    "./src/blender-addon/easystates-deadline-submitter",
+]

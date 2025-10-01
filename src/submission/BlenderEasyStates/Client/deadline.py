@@ -50,34 +50,31 @@ def GetRepositoryFilePath(subdir):
     # Specifying PIPE for all handles to workaround a Python bug on Windows. The unused handles are then closed immediatley afterwards.
     proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=startupinfo)
 
-    proc.stdin.close()
-    proc.stderr.close()
+    proc.stdin.close() # type:ignore
+    proc.stderr.close() # type:ignore
 
-    output = proc.stdout.read()
+    output = proc.stdout.read() # type:ignore
 
     path = output.decode("utf_8")
     path = path.replace("\r","").replace("\n","").replace("\\","/")
 
     return path
 
-def main( ):
-    script_file = GetRepositoryFilePath("scripts/Submission/BlenderSubmission.py")
+def submit_easystate_render(
+    scene : bpy.types.Scene,
+    scene_file : str,
+    state_list : str
+):
+    _script_file = GetRepositoryFilePath("scripts/Submission/BlenderEasyStatesSubmission.py")
 
-    curr_scene = bpy.context.scene
-    curr_render = curr_scene.render    
-
-    scene_file = str(bpy.data.filepath)
+    frame_range = str(scene.frame_start)
+    if scene.frame_start != scene.frame_end:
+        frame_range = frame_range + "-" + str(scene.frame_end)
     
-    if scene_file != "":
-        bpy.ops.wm.save_mainfile()
-    
-    frame_range = str(curr_scene.frame_start)
-    if curr_scene.frame_start != curr_scene.frame_end:
-        frame_range = frame_range + "-" + str(curr_scene.frame_end)
-    
-    output_path = str(curr_render.frame_path( frame=curr_scene.frame_start ))
-    threads_mode = str(curr_render.threads_mode)
-    threads = curr_render.threads
+    _curr_render = scene.render    
+    output_path = str(_curr_render.frame_path( frame=scene.frame_start ))
+    threads_mode = str(_curr_render.threads_mode)
+    threads = _curr_render.threads
     if threads_mode == "AUTO":
         threads = 0
     
@@ -88,12 +85,15 @@ def main( ):
     args = []
     args.append(deadlineCommand)
     args.append("-ExecuteScript")
-    args.append(script_file)
+    args.append(_script_file)
     args.append(scene_file)
     args.append(frame_range)
     args.append(output_path)
     args.append(str(threads))
     args.append(platform)
+    args.append(state_list)
+    
+    print(state_list)
     
     startupinfo = None
     #~ if os.name == 'nt':

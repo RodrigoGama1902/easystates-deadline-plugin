@@ -37,23 +37,23 @@ def __main__( *args ):
     global StatesFile
 
     scriptDialog = DeadlineScriptDialog()
-    scriptDialog.SetTitle( "Submit EasyStates Blender Job To Deadline" )
+    scriptDialog.SetTitle( "Submit EasyStates Blender Batch To Deadline" )
     scriptDialog.SetIcon( scriptDialog.GetIcon( 'Blender' ) )
     
     scriptDialog.AddTabControl("Tabs", 0, 0)
     
-    scriptDialog.AddTabPage("Job Options")
+    scriptDialog.AddTabPage("Batch Options")
     scriptDialog.AddGrid()
-    scriptDialog.AddControlToGrid( "Separator1", "SeparatorControl", "Job Description", 0, 0, colSpan=2 )
+    scriptDialog.AddControlToGrid( "Separator1", "SeparatorControl", "Batch Description", 0, 0, colSpan=2 )
 
     scriptDialog.AddControlToGrid( "NameLabel", "LabelControl", "Batch Name", 1, 0, "The name of your job. This is optional, and if left blank, it will default to 'Untitled'.", False )
     scriptDialog.AddControlToGrid( "BatchNameBox", "TextControl", "Untitled", 1, 1 )
     scriptDialog.AddSelectionControlToGrid( "IncludeTimestamp", "CheckBoxControl", True, "Include Timestamp", 1, 2, "If the Auto Task Timeout is properly configured in the Repository Options, then enabling this will allow a task timeout to be automatically calculated based on the render times of previous frames for the job. " )
 
-    scriptDialog.AddControlToGrid( "CommentLabel", "LabelControl", "Comment", 2, 0, "A simple description of your job. This is optional and can be left blank.", False )
+    scriptDialog.AddControlToGrid( "CommentLabel", "LabelControl", "Comment", 2, 0, "A simple description of your job. This is optional and can be left blank. (Will be applied to all jobs in the batch)", False )
     scriptDialog.AddControlToGrid( "CommentBox", "TextControl", "", 2, 1 )
 
-    scriptDialog.AddControlToGrid( "DepartmentLabel", "LabelControl", "Department", 3, 0, "The department you belong to. This is optional and can be left blank.", False )
+    scriptDialog.AddControlToGrid( "DepartmentLabel", "LabelControl", "Department", 3, 0, "The department you belong to. This is optional and can be left blank. (Will be applied to all jobs in the batch)", False )
     scriptDialog.AddControlToGrid( "DepartmentBox", "TextControl", "", 3, 1 )
     scriptDialog.EndGrid()
 

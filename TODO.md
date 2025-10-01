@@ -1,0 +1,2 @@
+- Add support for submission outside of blender, without the need to generate a temp scene states file.
+- Implemente the custom rendering script for the plugin

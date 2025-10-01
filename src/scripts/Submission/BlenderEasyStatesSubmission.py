@@ -104,9 +104,6 @@ def __main__( *args ):
     scriptDialog.AddControlToGrid( "SceneLabel", "LabelControl", "Blender File", 1, 0, "The scene file to be rendered.", False )
     scriptDialog.AddSelectionControlToGrid( "SceneBox", "FileBrowserControl", "", "Blender Files (*.blend);;All Files (*)", 1, 1, colSpan=2 )
 
-    scriptDialog.AddControlToGrid( "OutputLabel", "LabelControl", "Output File (Optional)", 2, 0, "Override the output path in the scene. This is optional, and can be left blank.", False )
-    scriptDialog.AddSelectionControlToGrid( "OutputBox", "FileSaverControl", "", "All Files (*)", 2, 1, colSpan=2 )
-
     scriptDialog.AddControlToGrid( "ChunkSizeLabel", "LabelControl", "Frames Per Task", 4, 0, "This is the number of frames that will be rendered at a time for each job task. ", False )
     scriptDialog.AddRangeControlToGrid( "ChunkSizeBox", "RangeControl", 1, 1, 1000000, 0, 1, 4, 1 , expand=False)
     scriptDialog.AddSelectionControlToGrid("SubmitSceneBox","CheckBoxControl",False,"Submit Blender Scene File With The Job", 4, 2, "If this option is enabled, the scene file will be submitted with the job, and then copied locally to the Worker machine during rendering.")
@@ -117,12 +114,6 @@ def __main__( *args ):
     scriptDialog.AddControlToGrid( "BuildLabel", "LabelControl", "Build To Force", 6, 0, "You can force 32 or 64 bit rendering with this option.", False )
     scriptDialog.AddComboControlToGrid( "BuildBox", "ComboControl", "None", ("None","32bit","64bit"), 6, 1, expand=False )
     scriptDialog.EndGrid()
-    
-    # NOTE: EasyStates options are not needed for now
-    # scriptDialog.AddGrid()
-    # scriptDialog.AddControlToGrid( "Separator4", "SeparatorControl", "EasyStates Options", 0, 0, colSpan=3 )
-    # scriptDialog.EndGrid()
-    
     scriptDialog.EndTabPage()
     
     integration_dialog = IntegrationUI.IntegrationDialog()
@@ -144,7 +135,7 @@ def __main__( *args ):
 
     scriptDialog.EndGrid()
     
-    settings = ("DepartmentBox","CategoryBox","PoolBox","SecondaryPoolBox","GroupBox","PriorityBox","MachineLimitBox","IsBlacklistBox","MachineListBox","LimitGroupBox","SceneBox","ChunkSizeBox","OutputBox","ThreadsBox","BuildBox", "SubmitSceneBox")
+    settings = ("DepartmentBox","CategoryBox","PoolBox","SecondaryPoolBox","GroupBox","PriorityBox","MachineLimitBox","IsBlacklistBox","MachineListBox","LimitGroupBox","SceneBox","ChunkSizeBox","ThreadsBox","BuildBox", "SubmitSceneBox")
     scriptDialog.LoadSettings( GetSettingsFilename(), settings )
     scriptDialog.EnabledStickySaving( settings, GetSettingsFilename() )
     
@@ -159,27 +150,14 @@ def __main__( *args ):
         scriptDialog.SetValue( "SceneBox", args[0] )
         scriptDialog.SetValue( "BatchNameBox", Path.GetFileNameWithoutExtension( args[0] ) )
         
-        StatesFile = args[4]
+        StatesFile = args[3]
         if StatesFile == "" or not File.Exists( StatesFile ):
             scriptDialog.ShowMessageBox( "The EasyStates scene states file must be specified and exist before it can be submitted to Deadline.", "Error" )
             return
-                
-        outputFile = args[1]
-        paddingSize = FrameUtils.GetPaddingSizeFromFilename( outputFile )
-        padding = ""
-        while len(padding) < paddingSize:
-            padding += "#"
+                        
+        scriptDialog.SetValue( "ThreadsBox", int(args[1]) )
         
-        outputFile = FrameUtils.GetFilenameWithoutPadding( outputFile )
-        directory = Path.GetDirectoryName( outputFile )
-        prefix = Path.GetFileNameWithoutExtension( outputFile )
-        extension = Path.GetExtension( outputFile )
-        outputFile = Path.Combine( directory, prefix + padding + extension )
-        scriptDialog.SetValue( "OutputBox", outputFile  )
-        
-        scriptDialog.SetValue( "ThreadsBox", int(args[2]) )
-        
-        platform = args[3]
+        platform = args[2]
         if platform.find( "64" ) >= 0:
             scriptDialog.SetValue( "BuildBox", "64bit" )
         elif platform.find( "32" ) >= 0 or platform.find( "86" ) >= 0:
@@ -198,13 +176,7 @@ def GetSettingsFilename():
 def SubmitButtonPressed(*args):
     global scriptDialog
     global integration_dialog
-    
-    outputFile = scriptDialog.GetValue( "OutputBox" )
-    
-    # Check if Integration options are valid
-    if not integration_dialog.CheckIntegrationSanity( outputFile ):
-        return
-        
+            
     # Check if blender files exist.
     sceneFile = scriptDialog.GetValue( "SceneBox" )
     if( not File.Exists( sceneFile ) ):
@@ -214,17 +186,7 @@ def SubmitButtonPressed(*args):
         result = scriptDialog.ShowMessageBox( "The Blender file %s is local. Are you sure you want to continue?" % sceneFile, "Warning", ("Yes","No") )
         if(result=="No"):
             return
-    
-    # Check output file
-    # if outputFile != "":
-    #     if(not Directory.Exists(Path.GetDirectoryName(outputFile))):
-    #         scriptDialog.ShowMessageBox( "The directory of the output file %s does not exist." % Path.GetDirectoryName(outputFile), "Error" )
-    #         return
-    #     elif( PathUtils.IsPathLocal(outputFile) ):
-    #         result = scriptDialog.ShowMessageBox( "The output file %s is local. Are you sure you want to continue?" % outputFile, "Warning", ("Yes","No") )
-    #         if(result=="No"):
-    #             return
-            
+                
     scene_states = []
     with open(StatesFile, 'r') as f:
         scene_states = f.readlines()
@@ -280,29 +242,17 @@ def SubmitButtonPressed(*args):
         
         writer.WriteLine( "Frames=%s" % frame_list )
         writer.WriteLine( "ChunkSize=%s" % scriptDialog.GetValue( "ChunkSizeBox" ) )
-        
-        if outputFile != "":
-            if outputFile.find( "#" ) < 0:
-                directory = Path.GetDirectoryName( outputFile )
-                prefix = Path.GetFileNameWithoutExtension( outputFile )
-                extension = Path.GetExtension( outputFile )
-                outputFile = Path.Combine( directory, prefix + "####" + extension )
-            writer.WriteLine( "OutputFilename0=%s" % outputFile )
-        
+                
         # Integration
         extraKVPIndex = 0
-        groupBatch = True
-
         if integration_dialog.IntegrationProcessingRequested():
             extraKVPIndex = integration_dialog.WriteIntegrationInfo( writer, extraKVPIndex )
-            groupBatch = groupBatch or integration_dialog.IntegrationGroupBatchRequested()
 
-        if groupBatch:
-            _batch_name = scriptDialog.GetValue( "BatchNameBox" )
-            if batch_timestamp:
-                _batch_name += " [" + batch_timestamp + "]"
-            
-            writer.WriteLine( "BatchName=%s\n" % ( _batch_name ) ) 
+        _batch_name = scriptDialog.GetValue( "BatchNameBox" )
+        if batch_timestamp:
+            _batch_name += " [" + batch_timestamp + "]"
+        
+        writer.WriteLine( "BatchName=%s\n" % ( _batch_name ) ) 
         writer.Close()
 
         # Create plugin info file.
@@ -311,9 +261,6 @@ def SubmitButtonPressed(*args):
         
         if(not scriptDialog.GetValue("SubmitSceneBox")):
             writer.WriteLine("SceneFile=" + sceneFile)
-        
-        # if outputFile != "":
-        #     writer.WriteLine( "OutputFile=%s" % outputFile )
         
         writer.WriteLine( "Threads=%s" % scriptDialog.GetValue( "ThreadsBox" ) )
         writer.WriteLine( "Build=%s" % scriptDialog.GetValue( "BuildBox" ) )

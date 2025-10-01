@@ -1,20 +1,3 @@
-#
-#Copyright 2017-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-#
-#This program is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 2 of the License, or
-#(at your option) any later version.
-#
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
-#
-#You should have received a copy of the GNU General Public License
-#along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from __future__ import print_function
 from pathlib import Path
 
 import bpy
@@ -22,19 +5,19 @@ import tempfile
 import uuid
 
 bl_info = {
-    "name": "Submit Blender To Deadline",
-    "description": "Submit a Blender job to Deadline",
-    "author": "Thinkbox Software Inc",
-    "version": (1, 1),
-    "blender": (2, 80, 0),
+    "name": "Submit EasyStates To Deadline",
+    "description": "Submit a EasyStates batch job to Deadline",
+    "author": "Rodrigo Gama",
+    "version": (1, 0, 0),
+    "blender": (4, 5, 0),
     "category": "Render",
-    "location": "Render > Submit To Deadline",
+    "location": "View 3D > Sidebar > EasyStates > Render",
 }
 
 from . import deadline
 
-class SubmitToDeadline_Operator (bpy.types.Operator):
-    bl_idname = "ops.submit_blender_to_deadline"
+class EZS_OT_SubmitToDeadline(bpy.types.Operator):
+    bl_idname = "easystates.submit_to_deadline"
     bl_label = "Submit Blender To Deadline"
     bl_description = "Submit a Blender job to Deadline"
         
@@ -66,45 +49,37 @@ class SubmitToDeadline_Operator (bpy.types.Operator):
         return txt_file
     
     def execute( self, context ):
-        
         if not bpy.data.is_saved:
             self.report( {'ERROR'}, "You must save your .blend file before submitting to Deadline" )
             return {'CANCELLED'}
-        
         scene_states_file = self._generate_scene_states_file(context.scene)
-        
         bpy.ops.wm.save_mainfile() # Auto Save the current .blend file before submitting     
-
         deadline.submit_easystate_render(
             context.scene,
             bpy.data.filepath,
             scene_states_file
         )
         return {'FINISHED'}
-    
-class EZS_PT_DeadlineSubmitter(bpy.types.Panel):
-    """Modifiers Panel."""
-
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "EasyStates"
-    bl_label = "Deadline Submitter"
-    
-    def draw(self, context: bpy.types.Context):
-        self.layout.operator( SubmitToDeadline_Operator.bl_idname, text="Submit To Deadline" )
-    
+        
 classes = (
-    EZS_PT_DeadlineSubmitter,
-    SubmitToDeadline_Operator
+    EZS_OT_SubmitToDeadline,
 )
+
+def _submit_render_operator(self, context):
+    """Add a button to the EZS Render panel to submit to Deadline"""
+    row = self.layout.row()
+    row.scale_y = 1.5
+    row.operator("easystates.submit_to_deadline", text="Submit To Deadline", icon="RESTRICT_VIEW_OFF")
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    bpy.types.EZS_PT_Render.append(_submit_render_operator)
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    bpy.types.EZS_PT_Render.remove(_submit_render_operator)
 
 if __name__ == "__main__":
     register()

@@ -1,0 +1,6 @@
+.venv/
+*.pyc
+*.zip
+__pycache__/
+release/
+.env

@@ -1,0 +1,5 @@
+{
+    "blender.addon.loadDirectory": "src/blender-addon/easystates_deadline_plugin",
+    "python.analysis.typeCheckingMode": "strict",
+    "editor.formatOnSave": false
+}

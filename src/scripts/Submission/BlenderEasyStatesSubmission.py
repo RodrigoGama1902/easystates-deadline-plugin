@@ -10,6 +10,7 @@ from DeadlineUI.Controls.Scripting.DeadlineScriptDialog import DeadlineScriptDia
 # For Integration UI
 import imp
 import os
+from datetime import datetime
 imp.load_source( 'IntegrationUI', RepositoryUtils.GetRepositoryFilePath( "submission/Integration/Main/IntegrationUI.py", True ) )
 import IntegrationUI
 
@@ -19,6 +20,7 @@ import IntegrationUI
 scriptDialog = None
 settings = None
 integration_dialog = None
+StatesFile = None
 
 ProjectManagementOptions = ["Shotgun","FTrack"]
 DraftRequested = True
@@ -32,6 +34,7 @@ def __main__( *args ):
     global ProjectManagementOptions
     global DraftRequested
     global integration_dialog
+    global StatesFile
 
     scriptDialog = DeadlineScriptDialog()
     scriptDialog.SetTitle( "Submit EasyStates Blender Job To Deadline" )
@@ -43,8 +46,9 @@ def __main__( *args ):
     scriptDialog.AddGrid()
     scriptDialog.AddControlToGrid( "Separator1", "SeparatorControl", "Job Description", 0, 0, colSpan=2 )
 
-    scriptDialog.AddControlToGrid( "NameLabel", "LabelControl", "Job Name", 1, 0, "The name of your job. This is optional, and if left blank, it will default to 'Untitled'.", False )
-    scriptDialog.AddControlToGrid( "NameBox", "TextControl", "Untitled", 1, 1 )
+    scriptDialog.AddControlToGrid( "NameLabel", "LabelControl", "Batch Name", 1, 0, "The name of your job. This is optional, and if left blank, it will default to 'Untitled'.", False )
+    scriptDialog.AddControlToGrid( "BatchNameBox", "TextControl", "Untitled", 1, 1 )
+    scriptDialog.AddSelectionControlToGrid( "IncludeTimestamp", "CheckBoxControl", True, "Include Timestamp", 1, 2, "If the Auto Task Timeout is properly configured in the Repository Options, then enabling this will allow a task timeout to be automatically calculated based on the render times of previous frames for the job. " )
 
     scriptDialog.AddControlToGrid( "CommentLabel", "LabelControl", "Comment", 2, 0, "A simple description of your job. This is optional and can be left blank.", False )
     scriptDialog.AddControlToGrid( "CommentBox", "TextControl", "", 2, 1 )
@@ -103,9 +107,6 @@ def __main__( *args ):
     scriptDialog.AddControlToGrid( "OutputLabel", "LabelControl", "Output File (Optional)", 2, 0, "Override the output path in the scene. This is optional, and can be left blank.", False )
     scriptDialog.AddSelectionControlToGrid( "OutputBox", "FileSaverControl", "", "All Files (*)", 2, 1, colSpan=2 )
 
-    scriptDialog.AddControlToGrid( "FramesLabel", "LabelControl", "Frame List", 3, 0, "The list of frames to render.", False )
-    scriptDialog.AddControlToGrid( "FramesBox", "TextControl", "", 3, 1, colSpan=2 )
-
     scriptDialog.AddControlToGrid( "ChunkSizeLabel", "LabelControl", "Frames Per Task", 4, 0, "This is the number of frames that will be rendered at a time for each job task. ", False )
     scriptDialog.AddRangeControlToGrid( "ChunkSizeBox", "RangeControl", 1, 1, 1000000, 0, 1, 4, 1 , expand=False)
     scriptDialog.AddSelectionControlToGrid("SubmitSceneBox","CheckBoxControl",False,"Submit Blender Scene File With The Job", 4, 2, "If this option is enabled, the scene file will be submitted with the job, and then copied locally to the Worker machine during rendering.")
@@ -117,13 +118,10 @@ def __main__( *args ):
     scriptDialog.AddComboControlToGrid( "BuildBox", "ComboControl", "None", ("None","32bit","64bit"), 6, 1, expand=False )
     scriptDialog.EndGrid()
     
-    scriptDialog.AddGrid()
-    scriptDialog.AddControlToGrid( "Separator4", "SeparatorControl", "EasyStates Options", 0, 0, colSpan=3 )
-    
-    scriptDialog.AddControlToGrid( "StatesLabel", "LabelControl", "Scene State List", 3, 0, "The list of scene states to render.", False )
-    scriptDialog.AddControlToGrid( "StatesBox", "TextControl", "", 3, 1, colSpan=2 )
-
-    scriptDialog.EndGrid()
+    # NOTE: EasyStates options are not needed for now
+    # scriptDialog.AddGrid()
+    # scriptDialog.AddControlToGrid( "Separator4", "SeparatorControl", "EasyStates Options", 0, 0, colSpan=3 )
+    # scriptDialog.EndGrid()
     
     scriptDialog.EndTabPage()
     
@@ -146,7 +144,7 @@ def __main__( *args ):
 
     scriptDialog.EndGrid()
     
-    settings = ("DepartmentBox","CategoryBox","PoolBox","SecondaryPoolBox","GroupBox","PriorityBox","MachineLimitBox","IsBlacklistBox","MachineListBox","LimitGroupBox","SceneBox","FramesBox","StatesBox","ChunkSizeBox","OutputBox","ThreadsBox","BuildBox", "SubmitSceneBox")
+    settings = ("DepartmentBox","CategoryBox","PoolBox","SecondaryPoolBox","GroupBox","PriorityBox","MachineLimitBox","IsBlacklistBox","MachineListBox","LimitGroupBox","SceneBox","ChunkSizeBox","OutputBox","ThreadsBox","BuildBox", "SubmitSceneBox")
     scriptDialog.LoadSettings( GetSettingsFilename(), settings )
     scriptDialog.EnabledStickySaving( settings, GetSettingsFilename() )
     
@@ -159,12 +157,14 @@ def __main__( *args ):
             return
         
         scriptDialog.SetValue( "SceneBox", args[0] )
-        scriptDialog.SetValue( "NameBox", Path.GetFileNameWithoutExtension( args[0] ) )
+        scriptDialog.SetValue( "BatchNameBox", Path.GetFileNameWithoutExtension( args[0] ) )
         
-        scriptDialog.SetValue( "FramesBox", args[1] )
-        scriptDialog.SetValue( "StatesBox", args[5] )
-        
-        outputFile = args[2]
+        StatesFile = args[4]
+        if StatesFile == "" or not File.Exists( StatesFile ):
+            scriptDialog.ShowMessageBox( "The EasyStates scene states file must be specified and exist before it can be submitted to Deadline.", "Error" )
+            return
+                
+        outputFile = args[1]
         paddingSize = FrameUtils.GetPaddingSizeFromFilename( outputFile )
         padding = ""
         while len(padding) < paddingSize:
@@ -177,9 +177,9 @@ def __main__( *args ):
         outputFile = Path.Combine( directory, prefix + padding + extension )
         scriptDialog.SetValue( "OutputBox", outputFile  )
         
-        scriptDialog.SetValue( "ThreadsBox", int(args[3]) )
+        scriptDialog.SetValue( "ThreadsBox", int(args[2]) )
         
-        platform = args[4]
+        platform = args[3]
         if platform.find( "64" ) >= 0:
             scriptDialog.SetValue( "BuildBox", "64bit" )
         elif platform.find( "32" ) >= 0 or platform.find( "86" ) >= 0:
@@ -224,90 +224,114 @@ def SubmitButtonPressed(*args):
             result = scriptDialog.ShowMessageBox( "The output file %s is local. Are you sure you want to continue?" % outputFile, "Warning", ("Yes","No") )
             if(result=="No"):
                 return
-    
-    # Check if a valid frame range has been specified.
-    frames = scriptDialog.GetValue( "FramesBox" )
-    if( not FrameUtils.FrameRangeValid( frames ) ):
-        scriptDialog.ShowMessageBox( "Frame range %s is not valid" % frames, "Error" )
+            
+    scene_states = []
+    with open(StatesFile, 'r') as f:
+        scene_states = f.readlines()
+    if len(scene_states) == 0:
+        scriptDialog.ShowMessageBox( "No scene states were found to render in the EasyStates scene states file %s" % scene_states_file, "Error" )
         return
+    
+    success = 0
+    total = 0
+    batch_timestamp = ""
+    if scriptDialog.GetValue("IncludeTimestamp"):
+        batch_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    for state in scene_states:
+        # ['Scene State 2\n', 'Scene State 3\n', 'Scene State 5\n', 'Scene State 6\n']
+        # convert to 'Scene State 2', 'Scene State 3', etc
+        state_name, frame_list = state.strip().split("|")
+
+        if state == "":
+            continue
+        if ";" in state or "," in state or "\t" in state:
+            scriptDialog.ShowMessageBox( "The scene state '%s' is not valid. Scene states cannot contain spaces, commas or semicolons." % state, "Error" )
+            return
         
-    jobName = scriptDialog.GetValue( "NameBox" )
-    
-    # Create job info file.
-    jobInfoFilename = Path.Combine( ClientUtils.GetDeadlineTempPath(), "blender_job_info.job" )
-    writer = StreamWriter( jobInfoFilename, False, Encoding.Unicode )
-    writer.WriteLine( "Plugin=Blender" )
-    writer.WriteLine( "Name=%s" % jobName )
-    writer.WriteLine( "Comment=%s" % scriptDialog.GetValue( "CommentBox" ) )
-    writer.WriteLine( "Department=%s" % scriptDialog.GetValue( "DepartmentBox" ) )
-    writer.WriteLine( "Pool=%s" % scriptDialog.GetValue( "PoolBox" ) )
-    writer.WriteLine( "SecondaryPool=%s" % scriptDialog.GetValue( "SecondaryPoolBox" ) )
-    writer.WriteLine( "Group=%s" % scriptDialog.GetValue( "GroupBox" ) )
-    writer.WriteLine( "Priority=%s" % scriptDialog.GetValue( "PriorityBox" ) )
-    writer.WriteLine( "TaskTimeoutMinutes=%s" % scriptDialog.GetValue( "TaskTimeoutBox" ) )
-    writer.WriteLine( "EnableAutoTimeout=%s" % scriptDialog.GetValue( "AutoTimeoutBox" ) )
-    writer.WriteLine( "ConcurrentTasks=%s" % scriptDialog.GetValue( "ConcurrentTasksBox" ) )
-    writer.WriteLine( "LimitConcurrentTasksToNumberOfCpus=%s" % scriptDialog.GetValue( "LimitConcurrentTasksBox" ) )
-    
-    writer.WriteLine( "MachineLimit=%s" % scriptDialog.GetValue( "MachineLimitBox" ) )
-    if( bool(scriptDialog.GetValue( "IsBlacklistBox" )) ):
-        writer.WriteLine( "Blacklist=%s" % scriptDialog.GetValue( "MachineListBox" ) )
-    else:
-        writer.WriteLine( "Whitelist=%s" % scriptDialog.GetValue( "MachineListBox" ) )
-    
-    writer.WriteLine( "LimitGroups=%s" % scriptDialog.GetValue( "LimitGroupBox" ) )
-    writer.WriteLine( "JobDependencies=%s" % scriptDialog.GetValue( "DependencyBox" ) )
-    writer.WriteLine( "OnJobComplete=%s" % scriptDialog.GetValue( "OnJobCompleteBox" ) )
-    
-    if( bool(scriptDialog.GetValue( "SubmitSuspendedBox" )) ):
-        writer.WriteLine( "InitialStatus=Suspended" )
-    
-    writer.WriteLine( "Frames=%s" % frames )
-    writer.WriteLine( "ChunkSize=%s" % scriptDialog.GetValue( "ChunkSizeBox" ) )
-    
-    if outputFile != "":
-        if outputFile.find( "#" ) < 0:
-            directory = Path.GetDirectoryName( outputFile )
-            prefix = Path.GetFileNameWithoutExtension( outputFile )
-            extension = Path.GetExtension( outputFile )
-            outputFile = Path.Combine( directory, prefix + "####" + extension )
-        writer.WriteLine( "OutputFilename0=%s" % outputFile )
-    
-    # Integration
-    extraKVPIndex = 0
-    groupBatch = False
+        # Create job info file.
+        jobInfoFilename = Path.Combine( ClientUtils.GetDeadlineTempPath(), "blender_job_info.job" )
+        writer = StreamWriter( jobInfoFilename, False, Encoding.Unicode )
+        writer.WriteLine( "Plugin=BlenderEasyStates" )
+        writer.WriteLine( "Name=%s" % state_name )
+        writer.WriteLine( "Comment=%s" % scriptDialog.GetValue( "CommentBox" ) )
+        writer.WriteLine( "Department=%s" % scriptDialog.GetValue( "DepartmentBox" ) )
+        writer.WriteLine( "Pool=%s" % scriptDialog.GetValue( "PoolBox" ) )
+        writer.WriteLine( "SecondaryPool=%s" % scriptDialog.GetValue( "SecondaryPoolBox" ) )
+        writer.WriteLine( "Group=%s" % scriptDialog.GetValue( "GroupBox" ) )
+        writer.WriteLine( "Priority=%s" % scriptDialog.GetValue( "PriorityBox" ) )
+        writer.WriteLine( "TaskTimeoutMinutes=%s" % scriptDialog.GetValue( "TaskTimeoutBox" ) )
+        writer.WriteLine( "EnableAutoTimeout=%s" % scriptDialog.GetValue( "AutoTimeoutBox" ) )
+        writer.WriteLine( "ConcurrentTasks=%s" % scriptDialog.GetValue( "ConcurrentTasksBox" ) )
+        writer.WriteLine( "LimitConcurrentTasksToNumberOfCpus=%s" % scriptDialog.GetValue( "LimitConcurrentTasksBox" ) )
+        
+        writer.WriteLine( "MachineLimit=%s" % scriptDialog.GetValue( "MachineLimitBox" ) )
+        if( bool(scriptDialog.GetValue( "IsBlacklistBox" )) ):
+            writer.WriteLine( "Blacklist=%s" % scriptDialog.GetValue( "MachineListBox" ) )
+        else:
+            writer.WriteLine( "Whitelist=%s" % scriptDialog.GetValue( "MachineListBox" ) )
+        
+        writer.WriteLine( "LimitGroups=%s" % scriptDialog.GetValue( "LimitGroupBox" ) )
+        writer.WriteLine( "JobDependencies=%s" % scriptDialog.GetValue( "DependencyBox" ) )
+        writer.WriteLine( "OnJobComplete=%s" % scriptDialog.GetValue( "OnJobCompleteBox" ) )
+        
+        if( bool(scriptDialog.GetValue( "SubmitSuspendedBox" )) ):
+            writer.WriteLine( "InitialStatus=Suspended" )
+        
+        writer.WriteLine( "Frames=%s" % frame_list )
+        writer.WriteLine( "ChunkSize=%s" % scriptDialog.GetValue( "ChunkSizeBox" ) )
+        
+        if outputFile != "":
+            if outputFile.find( "#" ) < 0:
+                directory = Path.GetDirectoryName( outputFile )
+                prefix = Path.GetFileNameWithoutExtension( outputFile )
+                extension = Path.GetExtension( outputFile )
+                outputFile = Path.Combine( directory, prefix + "####" + extension )
+            writer.WriteLine( "OutputFilename0=%s" % outputFile )
+        
+        # Integration
+        extraKVPIndex = 0
+        groupBatch = True
 
-    if integration_dialog.IntegrationProcessingRequested():
-        extraKVPIndex = integration_dialog.WriteIntegrationInfo( writer, extraKVPIndex )
-        groupBatch = groupBatch or integration_dialog.IntegrationGroupBatchRequested()
+        if integration_dialog.IntegrationProcessingRequested():
+            extraKVPIndex = integration_dialog.WriteIntegrationInfo( writer, extraKVPIndex )
+            groupBatch = groupBatch or integration_dialog.IntegrationGroupBatchRequested()
 
-    if groupBatch:
-        writer.WriteLine( "BatchName=%s\n" % ( jobName ) ) 
-    writer.Close()
+        if groupBatch:
+            _batch_name = scriptDialog.GetValue( "BatchNameBox" )
+            if batch_timestamp:
+                _batch_name += " [" + batch_timestamp + "]"
+            
+            writer.WriteLine( "BatchName=%s\n" % ( _batch_name ) ) 
+        writer.Close()
 
-    # Create plugin info file.
-    pluginInfoFilename = Path.Combine( ClientUtils.GetDeadlineTempPath(), "blender_plugin_info.job" )
-    writer = StreamWriter( pluginInfoFilename, False, Encoding.Unicode )
+        # Create plugin info file.
+        pluginInfoFilename = Path.Combine( ClientUtils.GetDeadlineTempPath(), "blender_plugin_info.job" )
+        writer = StreamWriter( pluginInfoFilename, False, Encoding.Unicode )
+        
+        if(not scriptDialog.GetValue("SubmitSceneBox")):
+            writer.WriteLine("SceneFile=" + sceneFile)
+        
+        if outputFile != "":
+            writer.WriteLine( "OutputFile=%s" % outputFile )
+        
+        writer.WriteLine( "Threads=%s" % scriptDialog.GetValue( "ThreadsBox" ) )
+        writer.WriteLine( "Build=%s" % scriptDialog.GetValue( "BuildBox" ) )
+        
+        writer.Close()
+        
+        # Setup the command line arguments.
+        arguments = StringCollection()
+        
+        arguments.Add( jobInfoFilename )
+        arguments.Add( pluginInfoFilename )
+        if scriptDialog.GetValue( "SubmitSceneBox" ):
+            arguments.Add( sceneFile )
+        
+        # Now submit the job.
+        results = ClientUtils.ExecuteCommandAndGetOutput( arguments )
+        if "The job was submitted successfully" in results:
+            success += 1
+        total += 1
     
-    if(not scriptDialog.GetValue("SubmitSceneBox")):
-        writer.WriteLine("SceneFile=" + sceneFile)
-    
-    if outputFile != "":
-        writer.WriteLine( "OutputFile=%s" % outputFile )
-    
-    writer.WriteLine( "Threads=%s" % scriptDialog.GetValue( "ThreadsBox" ) )
-    writer.WriteLine( "Build=%s" % scriptDialog.GetValue( "BuildBox" ) )
-    
-    writer.Close()
-    
-    # Setup the command line arguments.
-    arguments = StringCollection()
-    
-    arguments.Add( jobInfoFilename )
-    arguments.Add( pluginInfoFilename )
-    if scriptDialog.GetValue( "SubmitSceneBox" ):
-        arguments.Add( sceneFile )
-    
-    # Now submit the job.
-    results = ClientUtils.ExecuteCommandAndGetOutput( arguments )
-    scriptDialog.ShowMessageBox( results, "Submission Results" )
+    scriptDialog.ShowMessageBox( "Successfully submitted %d of %d jobs." % (success, total), "Submission Results" )

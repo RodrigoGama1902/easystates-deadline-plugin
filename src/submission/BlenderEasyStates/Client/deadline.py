@@ -17,6 +17,7 @@
 import bpy
 import os
 import subprocess
+from pathlib import Path
 
 def GetDeadlineCommand():
     deadlineBin = ""
@@ -63,15 +64,11 @@ def GetRepositoryFilePath(subdir):
 def submit_easystate_render(
     scene : bpy.types.Scene,
     scene_file : str,
-    state_list : str
+    scene_states_file : Path
 ):
-    _script_file = GetRepositoryFilePath("scripts/Submission/BlenderEasyStatesSubmission.py")
-
-    frame_range = str(scene.frame_start)
-    if scene.frame_start != scene.frame_end:
-        frame_range = frame_range + "-" + str(scene.frame_end)
-    
+    _script_file = GetRepositoryFilePath("scripts/Submission/BlenderEasyStatesSubmission.py")    
     _curr_render = scene.render    
+    
     output_path = str(_curr_render.frame_path( frame=scene.frame_start ))
     threads_mode = str(_curr_render.threads_mode)
     threads = _curr_render.threads
@@ -87,17 +84,9 @@ def submit_easystate_render(
     args.append("-ExecuteScript")
     args.append(_script_file)
     args.append(scene_file)
-    args.append(frame_range)
     args.append(output_path)
     args.append(str(threads))
     args.append(platform)
-    args.append(state_list)
-    
-    print(state_list)
-    
-    startupinfo = None
-    #~ if os.name == 'nt':
-        #~ startupinfo = subprocess.STARTUPINFO()
-        #~ startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    
-    subprocess.Popen(args, startupinfo=startupinfo)
+    args.append(str(scene_states_file))
+
+    subprocess.Popen(args)

@@ -5,7 +5,7 @@ import zipfile
 # Paths
 ROOT = Path(__file__).resolve().parent.parent
 
-SRC_BLENDER_ADDON = ROOT / "src" / "blender-addon" / "easystates_deadline_plugin"
+SRC_BLENDER_ADDON = ROOT / "src" / "blender-addon" / "BlenderEasyStates"
 SRC_DEADLINE_PLUGIN = ROOT / "src" / "deadline-plugin" / "BlenderEasyStates"
 
 RELEASE = ROOT / "release"

@@ -5,10 +5,10 @@ import zipfile
 # Paths
 ROOT = Path(__file__).resolve().parent.parent
 
-SRC_BLENDER_ADDON = ROOT / "src" / "blender-addon" / "BlenderEasyStates"
+SRC_BLENDER_ADDON = ROOT / "src" / "blender-addon" / "easystates-deadline-submitter"
 SRC_DEADLINE_PLUGIN = ROOT / "src" / "deadline-plugin" / "BlenderEasyStates"
 
-RELEASE = ROOT / "release"
+RELEASE = ROOT / ".release"
 SUBMISSION = RELEASE / "submission" / "BlenderEasyStates"
 PLUGINS = RELEASE / "plugins" / "BlenderEasyStates"
 
@@ -45,7 +45,7 @@ def main():
 
     # 1. Create submission subfolder and addon zip inside it
     ensure_clean_dir(SUBMISSION)
-    addon_zip = SUBMISSION / "BlenderEasyStates.zip"
+    addon_zip = SUBMISSION / "easystates-deadline-submitter.zip"
     make_zip_from_folder(SRC_BLENDER_ADDON, addon_zip)
 
     # 2. Copy Deadline plugin files (while ignoring cache)

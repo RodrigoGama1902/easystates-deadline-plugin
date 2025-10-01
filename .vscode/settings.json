@@ -1,5 +1,6 @@
 {
-    "blender.addon.loadDirectory": "src/blender-addon/easystates_deadline_plugin",
-    "python.analysis.typeCheckingMode": "strict",
+    "blender.addon.moduleName": "easystates-deadline-submitter",
+    "blender.addon.sourceDirectory": "src/blender-addon/easystates-deadline-submitter",
+    "blender.addon.loadDirectory": "src/blender-addon/easystates-deadline-submitter",
     "editor.formatOnSave": false
 }

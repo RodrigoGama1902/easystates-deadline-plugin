@@ -2,5 +2,5 @@
 *.pyc
 *.zip
 __pycache__/
-release/
+.release/
 .env

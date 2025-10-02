@@ -23,3 +23,4 @@ Category=Render Executables
 CategoryOrder=0
 Default=C:\Program Files\Blender Foundation\Blender 4.5\blender.exe;/Applications/Blender/blender.app/Contents/MacOS/blender;/usr/local/Blender/blender
 Description=The path to the Blender executable file used for rendering. Enter alternative paths on separate lines. Make sure the specified Blender installation has the EasyStates add-on installed.
+

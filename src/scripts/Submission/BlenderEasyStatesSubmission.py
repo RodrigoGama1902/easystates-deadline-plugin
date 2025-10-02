@@ -6,39 +6,24 @@ from System.Text import *
 from Deadline.Scripting import *
 
 from DeadlineUI.Controls.Scripting.DeadlineScriptDialog import DeadlineScriptDialog
-
-# For Integration UI
-import imp
-import os
 from datetime import datetime
-imp.load_source( 'IntegrationUI', RepositoryUtils.GetRepositoryFilePath( "submission/Integration/Main/IntegrationUI.py", True ) )
-import IntegrationUI
 
-########################################################################
+# ========================================================================
 ## Globals
-########################################################################
+# ========================================================================
 script_dialog = None
 settings = None
-integration_dialog = None
 states_file = None
 
-project_management_options = ["Shotgun", "FTrack"]
-draft_requested = True
-
-########################################################################
-## Main Function Called By Deadline
-########################################################################
 def __main__(*args):
+    """Entry point of the script. Called by Deadline."""
     global script_dialog
     global settings
-    global project_management_options
-    global draft_requested
-    global integration_dialog
     global states_file
 
     script_dialog = DeadlineScriptDialog()
     script_dialog.SetTitle("Submit EasyStates Blender Batch To Deadline")
-    script_dialog.SetIcon(script_dialog.GetIcon('Blender'))
+    script_dialog.SetIcon(script_dialog.GetIcon('BlenderEasyStates'))
     
     script_dialog.AddTabControl("Tabs", 0, 0)
     
@@ -123,19 +108,15 @@ def __main__(*args):
     script_dialog.EndGrid()
     script_dialog.EndTabPage()
     
-    integration_dialog = IntegrationUI.IntegrationDialog()
-    integration_dialog.AddIntegrationTabs(script_dialog, "BlenderMonitor", draft_requested, project_management_options, failOnNoTabs=False)
-    
     script_dialog.EndTabControl()
     
     script_dialog.AddGrid()
     script_dialog.AddHorizontalSpacerToGrid("HSpacer1", 0, 0)
 
     submit_button = script_dialog.AddControlToGrid("SubmitButton", "ButtonControl", "Submit", 0, 1, expand=False)
-    submit_button.ValueModified.connect(submit_button_pressed)
+    submit_button.ValueModified.connect(_submit_button_pressed)
 
     close_button = script_dialog.AddControlToGrid("CloseButton", "ButtonControl", "Close", 0, 2, expand=False)
-    close_button.ValueModified.connect(integration_dialog.CloseProjectManagementConnections)
     close_button.ValueModified.connect(script_dialog.closeEvent)
 
     script_dialog.EndGrid()
@@ -162,14 +143,11 @@ def __main__(*args):
 
     script_dialog.ShowDialog(app_submission)
 
-
 def _get_settings_filename():
-    return Path.Combine(ClientUtils.GetUsersSettingsDirectory(), "easy_states_blender_settings.ini")
+    return Path.Combine(ClientUtils.GetUsersSettingsDirectory(), "EasyStatesBlenderSettings.ini")
 
-
-def submit_button_pressed(*args):
+def _submit_button_pressed(*args):
     global script_dialog
-    global integration_dialog
     global states_file
             
     scene_file = script_dialog.GetValue("BlendFileBox")
@@ -234,10 +212,6 @@ def submit_button_pressed(*args):
         writer.WriteLine("Frames=%s" % frame_list)
         writer.WriteLine("ChunkSize=%s" % script_dialog.GetValue("ChunkSizeBox"))
                 
-        extra_kvp_index = 0
-        if integration_dialog.IntegrationProcessingRequested():
-            extra_kvp_index = integration_dialog.WriteIntegrationInfo(writer, extra_kvp_index)
-
         batch_name = script_dialog.GetValue("BatchNameBox")
         if batch_timestamp:
             batch_name += " [" + batch_timestamp + "]"
@@ -249,7 +223,7 @@ def submit_button_pressed(*args):
         writer = StreamWriter(plugin_info_filename, False, Encoding.Unicode)
         
         if not script_dialog.GetValue("SubmitBlendFileBox"):
-            writer.WriteLine("BlendFile=" + scene_file)
+            writer.WriteLine("SceneFile=" + scene_file)
         
         writer.WriteLine("SceneStateID=%s" % state_id)
         writer.Close()

@@ -8,7 +8,7 @@ from Deadline.Scripting import *
 def GetDeadlinePlugin():
     return EasyStatesBlenderPlugin()
     
-def CleanupDeadlinePlugin(deadlinePlugin):
+def CleanupDeadlinePlugin( deadlinePlugin ):
     deadlinePlugin.Cleanup()
     
 def _easystates_render_python_expr(scene_state_id, frame_start, frame_end):
@@ -48,59 +48,52 @@ class EasyStatesBlenderPlugin(DeadlinePlugin):
     def InitializeProcess(self):
         self.SingleFramesOnly = False
         self.StdoutHandling = True
-  
+        
+        #Std out handlers
         self.AddStdoutHandlerCallback(".*Tile ([0-9]+)/([0-9]+).*").HandleCallback += self.HandleTileProgress
         self.AddStdoutHandlerCallback(".*Sample ([0-9]+)/([0-9]+).*").HandleCallback += self.HandleSampleProgress
         self.AddStdoutHandlerCallback(".*Scene, Part ([0-9]+)-([0-9]+).*").HandleCallback += self.HandleSceneProgress
         self.AddStdoutHandlerCallback(".*Saved:.*").HandleCallback += self.HandleStdoutSaved
-        self.AddStdoutHandlerCallback(".*Error.*").HandleCallback += self.HandleStdoutError
+        #self.AddStdoutHandlerCallback(".*Error.*").HandleCallback += self.HandleStdoutError
         self.AddStdoutHandlerCallback("Unable to open.*").HandleCallback += self.HandleStdoutFailed
         self.AddStdoutHandlerCallback("Failed to read blend file.*").HandleCallback += self.HandleStdoutFailed
         self.AddStdoutHandlerCallback(".*Unable to create directory.*").HandleCallback += self.HandleStdoutFailed
         self.AddStdoutHandlerCallback(".*EasyStates add-on is not enabled.*").HandleCallback += self.HandleStdoutError
     
     def RenderExecutable(self):
-        
         executable = ""
-        executableList = self.GetConfigEntry( "Blender_RenderExecutable" )
+        executableList = self.GetConfigEntry( "BlenderEasyStatesExecutable" )
         
-        self.LogInfo( "Enforcing 64 bit build of Blender" )
-        executable = FileUtils.SearchFileListFor64Bit( executableList )
+        executable = FileUtils.SearchFileList( executableList )
         if executable == "":
-            self.LogWarning( "64 bit Blender render executable was not found in the semicolon separated list \"" + executableList + "\". Checking for any executable that exists instead." )
+            self.FailRender( "Blender render executable was not found in the semicolon separated list \"" + executableList + "\". The path to the render executable can be configured from the Plugin Configuration in the Deadline Monitor." )
             
-        if executable == "":
-            self.LogInfo( "Not enforcing a build of Blender" )
-            executable = FileUtils.SearchFileList( executableList )
-            if executable == "":
-                self.FailRender( "Blender render executable was not found in the semicolon separated list \"" + executableList + "\". The path to the render executable can be configured from the Plugin Configuration in the Deadline Monitor." )
-        
         return executable
         
     def RenderArgument(self):
         
-        sceneFile = self.GetPluginInfoEntryWithDefault( "SceneFile", self.GetDataFilename() )
-        sceneStateID = self.GetPluginInfoEntryWithDefault( "SceneStateID", "" )
+        _blend_file = self.GetPluginInfoEntryWithDefault("BlendFile",self.GetDataFilename())
+        _scene_state_id = self.GetPluginInfoEntryWithDefault("SceneStateID","")
         
-        sceneFile = RepositoryUtils.CheckPathMapping( sceneFile )
+        _blend_file = RepositoryUtils.CheckPathMapping(_blend_file)
         if SystemUtils.IsRunningOnWindows():
-            sceneFile = sceneFile.replace( "/", "\\" )
-            if sceneFile.startswith( "\\" ) and not sceneFile.startswith( "\\\\" ):
-                sceneFile = "\\" + sceneFile
+            _blend_file = _blend_file.replace( "/", "\\" )
+            if _blend_file.startswith( "\\" ) and not _blend_file.startswith( "\\\\" ):
+                _blend_file = "\\" + _blend_file
         else:
-            sceneFile = sceneFile.replace( "\\", "/" )
+            _blend_file = _blend_file.replace( "\\", "/" )
         
-        renderArgument = " -b \"" + sceneFile + "\""
+        renderArgument = " -b \"" + _blend_file + "\""
         renderArgument += " --python-expr \"" + _easystates_render_python_expr(
-            sceneStateID,
+            _scene_state_id,
             self.GetStartFrame(),
             self.GetEndFrame()
         ).strip().replace('"', '\\"') + "\""
-        
+                
         return renderArgument
         
     def PreRenderTasks(self):
-        self.LogInfo("EasyStates Blender job starting...") 
+        self.LogInfo( "Blender job starting..." ) 
 
         # Plugin specific values for progress
         self.totalFrames = self.GetEndFrame() - self.GetStartFrame() + 1
@@ -112,7 +105,7 @@ class EasyStatesBlenderPlugin(DeadlinePlugin):
         self.UpdateProgress()
         
     def PostRenderTasks(self):
-        self.LogInfo("EasyStates Blender job finished.")
+        self.LogInfo( "Blender job finished." )
         
     def UpdateProgress(self):
         progress = self.finishedFrames

@@ -48,24 +48,18 @@ def _get_repository_file_path(subdir: Optional[str] = None) -> str:
 
 
 def submit_easystate_render(
-    scene: bpy.types.Scene,
-    scene_file: str,
+    blend_file: str,
     scene_states_file: Path,
 ) -> None:
     """
     Submit the given Blender scene and EasyStates file to Deadline.
     """
-    script_file = _get_repository_file_path("scripts/Submission/BlenderEasyStatesSubmission.py")
-    render_settings = scene.render
-    threads = 0 if render_settings.threads_mode == 'AUTO' else render_settings.threads
-
+    _script_file = _get_repository_file_path("scripts/Submission/BlenderEasyStatesSubmission.py")
     args = [
         _get_deadline_command(),
         "-ExecuteScript",
-        script_file,
-        scene_file,
-        str(threads),
+        _script_file,
+        blend_file,
         str(scene_states_file),
     ]
-
     subprocess.Popen(args)

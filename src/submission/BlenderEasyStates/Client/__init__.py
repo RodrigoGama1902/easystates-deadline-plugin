@@ -55,7 +55,6 @@ class EZS_OT_SubmitToDeadline(bpy.types.Operator):
         scene_states_file = self._generate_scene_states_file(context.scene)
         bpy.ops.wm.save_mainfile() # Auto Save the current .blend file before submitting     
         deadline.submit_easystate_render(
-            context.scene,
             bpy.data.filepath,
             scene_states_file
         )
@@ -74,12 +73,18 @@ def _submit_render_operator(self, context):
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.EZS_PT_Render.append(_submit_render_operator)
+        
+    if hasattr(bpy.types, "EZS_PT_Render"):
+        bpy.types.EZS_PT_Render.append(_submit_render_operator)
+    else:
+        print("EZS_PT_Render not found, make sure you have the EasyStates addon enabled.")
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-    bpy.types.EZS_PT_Render.remove(_submit_render_operator)
+    
+    if hasattr(bpy.types, "EZS_PT_Render"):
+        bpy.types.EZS_PT_Render.remove(_submit_render_operator)
 
 if __name__ == "__main__":
     register()

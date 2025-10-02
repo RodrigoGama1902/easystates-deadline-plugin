@@ -181,7 +181,7 @@ def _submit_button_pressed(*args):
             script_dialog.ShowMessageBox("The scene state '%s' is not valid." % state, "Error")
             return
         
-        job_info_filename = Path.Combine(ClientUtils.GetDeadlineTempPath(), "blender_job_info.job")
+        job_info_filename = Path.Combine(ClientUtils.GetDeadlineTempPath(), "blender_easystates_job_info.job")
         writer = StreamWriter(job_info_filename, False, Encoding.Unicode)
         writer.WriteLine("Plugin=BlenderEasyStates")
         writer.WriteLine("Name=%s" % state_name)
@@ -219,7 +219,7 @@ def _submit_button_pressed(*args):
         writer.WriteLine("BatchName=%s\n" % (batch_name))
         writer.Close()
 
-        plugin_info_filename = Path.Combine(ClientUtils.GetDeadlineTempPath(), "blender_plugin_info.job")
+        plugin_info_filename = Path.Combine(ClientUtils.GetDeadlineTempPath(), "blender_easystates_plugin_info.job")
         writer = StreamWriter(plugin_info_filename, False, Encoding.Unicode)
         
         if not script_dialog.GetValue("SubmitBlendFileBox"):

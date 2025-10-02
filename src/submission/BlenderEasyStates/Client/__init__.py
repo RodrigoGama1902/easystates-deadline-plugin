@@ -2,7 +2,6 @@ from pathlib import Path
 
 import bpy
 import tempfile
-import uuid
 
 bl_info = {
     "name": "Submit EasyStates To Deadline",

@@ -140,7 +140,7 @@ def create_github_release(release_asset: Path) -> bool:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
-    dist_path = PROJECT_ROOT / "release" / "easystates_deadline_plugin.zip"
+    dist_path = PROJECT_ROOT / ".release" / "EasyStatesDeadlinePlugin.zip"
     if not dist_path.exists():
         raise Exception(f"Distribution file not found at: {dist_path}")
 

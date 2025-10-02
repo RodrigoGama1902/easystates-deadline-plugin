@@ -24,7 +24,7 @@ def _easystates_render_python_expr(scene_state_id: str, frame_start: int, frame_
         "if not hasattr(bpy.context.scene, 'easystates_manager'):\n"
         "    print('EasyStates add-on is not enabled.')\n"
         "else:\n"
-        "    bpy.ops.easystates.single_render(id={scene_state_id}, background_render=True, frame_start={frame_start}, frame_end={frame_end})\n"
+        "    bpy.ops.easystates.background_render(scene_state_id={scene_state_id}, frame_start={frame_start}, frame_end={frame_end})\n"
     ).format(scene_state_id=repr(scene_state_id), frame_start=frame_start, frame_end=frame_end)
 
 class EasyStatesBlenderPlugin(DeadlinePlugin):

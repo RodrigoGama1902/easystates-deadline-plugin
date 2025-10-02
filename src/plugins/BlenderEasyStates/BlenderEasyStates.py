@@ -6,9 +6,9 @@ from Deadline.Plugins import *
 from Deadline.Scripting import *
 
 def GetDeadlinePlugin():
-    return BlenderPlugin()
+    return EasyStatesBlenderPlugin()
     
-def CleanupDeadlinePlugin( deadlinePlugin ):
+def CleanupDeadlinePlugin(deadlinePlugin):
     deadlinePlugin.Cleanup()
     
 def _easystates_render_python_expr(scene_state_id, frame_start, frame_end):
@@ -24,7 +24,7 @@ def _easystates_render_python_expr(scene_state_id, frame_start, frame_end):
         "    bpy.ops.easystates.single_render(id={scene_state_id}, background_render=True, frame_start={frame_start}, frame_end={frame_end})\n"
     ).format(scene_state_id=repr(scene_state_id), frame_start=frame_start, frame_end=frame_end)
     
-class BlenderPlugin(DeadlinePlugin):
+class EasyStatesBlenderPlugin(DeadlinePlugin):
     frameCount = 0
     finishedFrameCount = 0
     
@@ -48,38 +48,28 @@ class BlenderPlugin(DeadlinePlugin):
     def InitializeProcess(self):
         self.SingleFramesOnly = False
         self.StdoutHandling = True
-        
-        #Std out handlers
+  
         self.AddStdoutHandlerCallback(".*Tile ([0-9]+)/([0-9]+).*").HandleCallback += self.HandleTileProgress
         self.AddStdoutHandlerCallback(".*Sample ([0-9]+)/([0-9]+).*").HandleCallback += self.HandleSampleProgress
         self.AddStdoutHandlerCallback(".*Scene, Part ([0-9]+)-([0-9]+).*").HandleCallback += self.HandleSceneProgress
         self.AddStdoutHandlerCallback(".*Saved:.*").HandleCallback += self.HandleStdoutSaved
-        #self.AddStdoutHandlerCallback(".*Error.*").HandleCallback += self.HandleStdoutError
+        self.AddStdoutHandlerCallback(".*Error.*").HandleCallback += self.HandleStdoutError
         self.AddStdoutHandlerCallback("Unable to open.*").HandleCallback += self.HandleStdoutFailed
         self.AddStdoutHandlerCallback("Failed to read blend file.*").HandleCallback += self.HandleStdoutFailed
         self.AddStdoutHandlerCallback(".*Unable to create directory.*").HandleCallback += self.HandleStdoutFailed
         self.AddStdoutHandlerCallback(".*EasyStates add-on is not enabled.*").HandleCallback += self.HandleStdoutError
     
     def RenderExecutable(self):
-        build = self.GetPluginInfoEntryWithDefault( "Build", "None" ).lower()
         
         executable = ""
         executableList = self.GetConfigEntry( "Blender_RenderExecutable" )
         
-        if(SystemUtils.IsRunningOnWindows()):
-            if( build == "32bit" ):
-                self.LogInfo( "Enforcing 32 bit build of Blender" )
-                executable = FileUtils.SearchFileListFor32Bit( executableList )
-                if( executable == "" ):
-                    self.LogWarning( "32 bit Blender render executable was not found in the semicolon separated list \"" + executableList + "\". Checking for any executable that exists instead." )
+        self.LogInfo( "Enforcing 64 bit build of Blender" )
+        executable = FileUtils.SearchFileListFor64Bit( executableList )
+        if executable == "":
+            self.LogWarning( "64 bit Blender render executable was not found in the semicolon separated list \"" + executableList + "\". Checking for any executable that exists instead." )
             
-            elif( build == "64bit" ):
-                self.LogInfo( "Enforcing 64 bit build of Blender" )
-                executable = FileUtils.SearchFileListFor64Bit( executableList )
-                if( executable == "" ):
-                    self.LogWarning( "64 bit Blender render executable was not found in the semicolon separated list \"" + executableList + "\". Checking for any executable that exists instead." )
-            
-        if( executable == "" ):
+        if executable == "":
             self.LogInfo( "Not enforcing a build of Blender" )
             executable = FileUtils.SearchFileList( executableList )
             if executable == "":
@@ -107,22 +97,10 @@ class BlenderPlugin(DeadlinePlugin):
             self.GetEndFrame()
         ).strip().replace('"', '\\"') + "\""
         
-        # outputFile = self.GetPluginInfoEntryWithDefault( "OutputFile", "" )
-        # outputFile = RepositoryUtils.CheckPathMapping( outputFile )
-        # if SystemUtils.IsRunningOnWindows():
-        #     outputFile = outputFile.replace( "/", "\\" )
-        #     if outputFile.startswith( "\\" ) and not outputFile.startswith( "\\\\" ):
-        #         outputFile = "\\" + outputFile
-        # else:
-        #     outputFile = outputFile.replace( "\\", "/" )
-        
-        # renderArgument += StringUtils.BlankIfEitherIsBlank( " -x 1 -o \"", StringUtils.BlankIfEitherIsBlank( outputFile, "\"" ) )
-        # renderArgument += " -s " + str(self.GetStartFrame()) + " -e " + str(self.GetEndFrame()) + " -a "
-        
         return renderArgument
         
     def PreRenderTasks(self):
-        self.LogInfo( "Blender job starting..." ) 
+        self.LogInfo("EasyStates Blender job starting...") 
 
         # Plugin specific values for progress
         self.totalFrames = self.GetEndFrame() - self.GetStartFrame() + 1
@@ -134,7 +112,7 @@ class BlenderPlugin(DeadlinePlugin):
         self.UpdateProgress()
         
     def PostRenderTasks(self):
-        self.LogInfo( "Blender job finished." )
+        self.LogInfo("EasyStates Blender job finished.")
         
     def UpdateProgress(self):
         progress = self.finishedFrames

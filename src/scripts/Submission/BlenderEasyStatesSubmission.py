@@ -111,8 +111,6 @@ def __main__( *args ):
     scriptDialog.AddControlToGrid( "ThreadsLabel", "LabelControl", "Threads", 5, 0, "The number of threads to use for rendering.", False )
     scriptDialog.AddRangeControlToGrid( "ThreadsBox", "RangeControl", 0, 0, 256, 0, 1, 5, 1, expand=False )
 
-    scriptDialog.AddControlToGrid( "BuildLabel", "LabelControl", "Build To Force", 6, 0, "You can force 32 or 64 bit rendering with this option.", False )
-    scriptDialog.AddComboControlToGrid( "BuildBox", "ComboControl", "None", ("None","32bit","64bit"), 6, 1, expand=False )
     scriptDialog.EndGrid()
     scriptDialog.EndTabPage()
     
@@ -135,9 +133,9 @@ def __main__( *args ):
 
     scriptDialog.EndGrid()
     
-    settings = ("DepartmentBox","CategoryBox","PoolBox","SecondaryPoolBox","GroupBox","PriorityBox","MachineLimitBox","IsBlacklistBox","MachineListBox","LimitGroupBox","SceneBox","ChunkSizeBox","ThreadsBox","BuildBox", "SubmitSceneBox")
-    scriptDialog.LoadSettings( GetSettingsFilename(), settings )
-    scriptDialog.EnabledStickySaving( settings, GetSettingsFilename() )
+    settings = ("DepartmentBox","CategoryBox","PoolBox","SecondaryPoolBox","GroupBox","PriorityBox","MachineLimitBox","IsBlacklistBox","MachineListBox","LimitGroupBox","SceneBox","ChunkSizeBox","ThreadsBox", "SubmitSceneBox")
+    scriptDialog.LoadSettings( _get_settings_filename(), settings )
+    scriptDialog.EnabledStickySaving( settings, _get_settings_filename() )
     
     appSubmission = False
     if len( args ) > 0:
@@ -150,28 +148,18 @@ def __main__( *args ):
         scriptDialog.SetValue( "SceneBox", args[0] )
         scriptDialog.SetValue( "BatchNameBox", Path.GetFileNameWithoutExtension( args[0] ) )
         
-        StatesFile = args[3]
+        StatesFile = args[2]
         if StatesFile == "" or not File.Exists( StatesFile ):
             scriptDialog.ShowMessageBox( "The EasyStates scene states file must be specified and exist before it can be submitted to Deadline.", "Error" )
             return
-                        
-        scriptDialog.SetValue( "ThreadsBox", int(args[1]) )
         
-        platform = args[2]
-        if platform.find( "64" ) >= 0:
-            scriptDialog.SetValue( "BuildBox", "64bit" )
-        elif platform.find( "32" ) >= 0 or platform.find( "86" ) >= 0:
-            scriptDialog.SetValue( "BuildBox", "32bit" )
-        else:
-            scriptDialog.SetValue( "BuildBox", "None" )
-            
-        # Keep the submission window above all other windows when submitting from another app.
-        scriptDialog.MakeTopMost()
+        scriptDialog.SetValue( "ThreadsBox", int(args[1]) )            
+        scriptDialog.MakeTopMost() # Keep the submission window above all other windows when submitting from another app.
 
     scriptDialog.ShowDialog( appSubmission )
     
-def GetSettingsFilename():
-    return Path.Combine( ClientUtils.GetUsersSettingsDirectory(), "BlenderSettings.ini" )
+def _get_settings_filename():
+    return Path.Combine(ClientUtils.GetUsersSettingsDirectory(),"EasyStatesBlenderSettings.ini")
 
 def SubmitButtonPressed(*args):
     global scriptDialog
@@ -263,7 +251,6 @@ def SubmitButtonPressed(*args):
             writer.WriteLine("SceneFile=" + sceneFile)
         
         writer.WriteLine( "Threads=%s" % scriptDialog.GetValue( "ThreadsBox" ) )
-        writer.WriteLine( "Build=%s" % scriptDialog.GetValue( "BuildBox" ) )
         writer.WriteLine( "SceneStateID=%s" % state_id )
 
         writer.Close()

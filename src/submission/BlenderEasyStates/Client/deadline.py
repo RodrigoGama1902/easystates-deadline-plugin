@@ -59,15 +59,12 @@ def submit_easystate_render(
     render_settings = scene.render
     threads = 0 if render_settings.threads_mode == 'AUTO' else render_settings.threads
 
-    platform = bpy.app.build_platform
-
     args = [
         _get_deadline_command(),
         "-ExecuteScript",
         script_file,
         scene_file,
         str(threads),
-        platform,
         str(scene_states_file),
     ]
 

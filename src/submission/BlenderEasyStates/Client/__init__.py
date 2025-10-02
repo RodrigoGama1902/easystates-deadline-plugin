@@ -23,7 +23,10 @@ class EZS_OT_SubmitToDeadline(bpy.types.Operator):
         
     @staticmethod
     def _generate_scene_states_file(scene: bpy.types.Scene) -> Path:
-        
+        """Generate a temporary text file containing the scene states to render
+        We are using this instead of passing the data directly to avoid issues with very 
+        long command line arguments.
+        """
         ezs_manager = getattr(scene, "easystates_manager", None)
         if ezs_manager is None:
             raise Exception("EZS Manager not found on the scene, make sure you have the EasyStates addon enabled.")
@@ -41,7 +44,7 @@ class EZS_OT_SubmitToDeadline(bpy.types.Operator):
             
             render_states.append((state.name, str(_frame_range), state.id))
             
-        txt_file = Path(tempfile.gettempdir()) / f"{uuid.uuid4().hex}.txt"
+        txt_file = Path(tempfile.gettempdir()) / f"temp_scene_states_file.txt"
         with open(txt_file, 'w', encoding='utf-8') as f:
             for state_name, frame_range, scene_state_id in render_states:
                 f.write(f"{state_name}|{frame_range}|{scene_state_id}\n")

@@ -68,25 +68,19 @@ classes = (
 
 def _submit_render_operator(self, context):
     """Add a button to the EZS Render panel to submit to Deadline"""
+    self.layout.separator()
     row = self.layout.row()
-    row.scale_y = 1.5
-    row.operator("easystates.submit_to_deadline", text="Submit To Deadline", icon="RESTRICT_VIEW_OFF")
+    row.operator("easystates.submit_to_deadline", text="EasyStates: Submit To Deadline", icon="RESTRICT_VIEW_OFF")
 
 def register():
     for cls in classes:
-        bpy.utils.register_class(cls)
-        
-    if hasattr(bpy.types, "EZS_PT_Render"):
-        bpy.types.EZS_PT_Render.append(_submit_render_operator)
-    else:
-        print("EZS_PT_Render not found, make sure you have the EasyStates addon enabled.")
+        bpy.utils.register_class(cls)      
+    bpy.types.TOPBAR_MT_render.append(_submit_render_operator)
 
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-    
-    if hasattr(bpy.types, "EZS_PT_Render"):
-        bpy.types.EZS_PT_Render.remove(_submit_render_operator)
+    bpy.types.TOPBAR_MT_render.remove(_submit_render_operator)
 
 if __name__ == "__main__":
     register()

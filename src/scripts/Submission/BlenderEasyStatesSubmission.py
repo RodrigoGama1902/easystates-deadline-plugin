@@ -15,12 +15,14 @@ from DeadlineUI.Controls.Scripting.DeadlineScriptDialog import DeadlineScriptDia
 script_dialog = None
 settings = None
 states_file = None
+datetime_override = None
 
 def __main__(*args):
     """Entry point of the script. Called by Deadline."""
     global script_dialog
     global settings
     global states_file
+    global datetime_override
 
     script_dialog = DeadlineScriptDialog()
     script_dialog.SetTitle("Submit EasyStates Batch To Deadline")
@@ -139,6 +141,7 @@ def __main__(*args):
         script_dialog.SetValue("BlendFileBox", args[0])
         script_dialog.SetValue("BatchNameBox", Path.GetFileNameWithoutExtension(args[0]))
         states_file = args[1]
+        datetime_override = args[2]
         if states_file == "" or not File.Exists(states_file):
             script_dialog.ShowMessageBox("The EasyStates scene states file must be specified and exist before it can be submitted.", "Error")
             return
@@ -149,7 +152,14 @@ def __main__(*args):
 def _get_settings_filename():
     return Path.Combine(ClientUtils.GetUsersSettingsDirectory(), "EasyStatesBlenderSettings.ini")
 
-def _submit_scene_state_job(state_name, frame_list, state_id, output_filepath, scene_file, batch_timestamp):
+def _submit_scene_state_job(
+    state_name, 
+    frame_list, 
+    state_id, 
+    output_filepath, 
+    scene_file, 
+    batch_timestamp,
+    datetime_override):
     """Submits a single job for the given scene state."""
     
     job_info_filename = Path.Combine(ClientUtils.GetDeadlineTempPath(), "blender_easystates_job_info.job")
@@ -200,6 +210,7 @@ def _submit_scene_state_job(state_name, frame_list, state_id, output_filepath, s
         writer.WriteLine("SceneFile=" + scene_file)
     
     writer.WriteLine("SceneStateID=%s" % state_id)
+    writer.WriteLine("DatetimeOverride=%s" % datetime_override)
     writer.Close()
     
     arguments = StringCollection()
@@ -213,6 +224,7 @@ def _submit_scene_state_job(state_name, frame_list, state_id, output_filepath, s
 def _submit_button_pressed(*args):
     global script_dialog
     global states_file
+    global datetime_override
             
     scene_file = script_dialog.GetValue("BlendFileBox")
     if not File.Exists(scene_file):
@@ -252,7 +264,14 @@ def _submit_button_pressed(*args):
             script_dialog.ShowMessageBox("The scene state '%s' is not valid." % state, "Error")
             return
         
-        results = _submit_scene_state_job(state_name, frame_list, state_id, output_filepath, scene_file, batch_timestamp)
+        results = _submit_scene_state_job(
+            state_name, 
+            frame_list, 
+            state_id, 
+            output_filepath, 
+            scene_file, 
+            batch_timestamp, 
+            datetime_override)
         if "The job was submitted successfully" in results:
             success += 1
         total += 1

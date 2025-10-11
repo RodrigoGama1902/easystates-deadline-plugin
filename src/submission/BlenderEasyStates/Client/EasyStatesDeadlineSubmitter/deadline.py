@@ -2,7 +2,7 @@ import os
 import subprocess
 from pathlib import Path
 from typing import Optional
-
+from datetime import datetime
 
 def _get_deadline_command() -> str:
     """
@@ -49,9 +49,15 @@ def _get_repository_file_path(subdir: Optional[str] = None) -> str:
 def submit_easystate_render(
     blend_file: str,
     scene_states_file: Path,
+    datetime_override : datetime,
 ) -> None:
     """
     Submit the given Blender scene and EasyStates file to Deadline.
+    
+    Args:
+        blend_file (str): Path to the .blend file.
+        scene_states_file (Path): Path to the temporary text file containing scene states.
+        datetime_override (datetime): Datetime to override <datetime> and <session_datetime> tags in output paths.
     """
     _script_file = _get_repository_file_path("scripts/Submission/BlenderEasyStatesSubmission.py")
     args = [
@@ -60,5 +66,6 @@ def submit_easystate_render(
         _script_file,
         blend_file,
         str(scene_states_file),
+        str(datetime_override.isoformat())
     ]
     subprocess.Popen(args)

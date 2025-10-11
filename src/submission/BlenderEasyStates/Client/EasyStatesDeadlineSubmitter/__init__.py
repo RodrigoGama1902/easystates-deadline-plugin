@@ -22,7 +22,7 @@ class EZS_OT_SubmitToDeadline(bpy.types.Operator):
     bl_description = "Submit a Blender job to Deadline"
         
     @staticmethod
-    def _generate_scene_states_file(context: bpy.types.Context) -> tuple[bool, Path, str]:
+    def _generate_scene_states_file(context: bpy.types.Context, datetime_override : datetime) -> tuple[bool, Path, str]:
         """Generate a temporary text file containing the scene states to render
         We are using this instead of passing the data directly to avoid issues with very 
         long command line arguments.
@@ -46,8 +46,8 @@ class EZS_OT_SubmitToDeadline(bpy.types.Operator):
                 context,
                 ezs_manager,
                 parse_output=True,
-                session_start_datetime=datetime.now(),
-                scene_state_datetime=datetime.now(),
+                session_start_datetime=datetime_override,
+                scene_state_datetime=datetime_override,
             )
             if not is_valid_path:
                 return (False, Path(""), f"Invalid output path for scene state '{state.name}': {parsed_output}")
@@ -66,7 +66,11 @@ class EZS_OT_SubmitToDeadline(bpy.types.Operator):
             self.report( {'ERROR'}, "You must save your .blend file before submitting to Deadline" )
             return {'CANCELLED'}
         
-        success, scene_states_file, error_message = self._generate_scene_states_file(context)
+        # Used to override <datetime> and <session_datetime> tags in output paths
+        # so the tag value has the same value as the expected submission output
+        datetime_override = datetime.now()
+        
+        success, scene_states_file, error_message = self._generate_scene_states_file(context, datetime_override)
         if not success:
             self.report( {'ERROR'}, error_message )
             return {'CANCELLED'}
@@ -74,7 +78,8 @@ class EZS_OT_SubmitToDeadline(bpy.types.Operator):
         bpy.ops.wm.save_mainfile() # Auto Save the current .blend file before submitting     
         deadline.submit_easystate_render(
             bpy.data.filepath,
-            scene_states_file
+            scene_states_file,
+            datetime_override
         )
         return {'FINISHED'}
         

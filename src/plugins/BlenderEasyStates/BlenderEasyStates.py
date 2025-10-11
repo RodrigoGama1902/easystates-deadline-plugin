@@ -14,7 +14,7 @@ def GetDeadlinePlugin() -> 'EasyStatesBlenderPlugin':
 def CleanupDeadlinePlugin(deadlinePlugin: 'EasyStatesBlenderPlugin') -> None:
     deadlinePlugin.Cleanup()
     
-def _easystates_render_python_expr(scene_state_id: str, frame_start: int, frame_end: int) -> str:
+def _easystates_render_python_expr(scene_state_id: str, frame_start: int, frame_end: int, datetime_override : str) -> str:
     """
     Returns a Python expression to be used with Blender's -P argument
     to set up the scene for rendering with EasyStates.
@@ -24,8 +24,8 @@ def _easystates_render_python_expr(scene_state_id: str, frame_start: int, frame_
         "if not hasattr(bpy.context.scene, 'easystates_manager'):\n"
         "    print('EasyStates add-on is not enabled.')\n"
         "else:\n"
-        "    bpy.ops.easystates.background_render(scene_state_id={scene_state_id}, frame_start={frame_start}, frame_end={frame_end})\n"
-    ).format(scene_state_id=repr(scene_state_id), frame_start=frame_start, frame_end=frame_end)
+        "    bpy.ops.easystates.background_render(scene_state_id={scene_state_id}, frame_start={frame_start}, frame_end={frame_end},datetime_override='{datetime_override}')\n"
+    ).format(scene_state_id=repr(scene_state_id), frame_start=frame_start, frame_end=frame_end, datetime_override=datetime_override)
 
 class EasyStatesBlenderPlugin(DeadlinePlugin):
     frameCount: int = 0
@@ -86,6 +86,7 @@ class EasyStatesBlenderPlugin(DeadlinePlugin):
         
         _blend_file: str = self.GetPluginInfoEntryWithDefault("SceneFile", self.GetDataFilename())
         _scene_state_id: str = self.GetPluginInfoEntryWithDefault("SceneStateID", "")
+        _datetime_override: str = self.GetPluginInfoEntryWithDefault("DatetimeOverride", "")
         
         _blend_file = RepositoryUtils.CheckPathMapping(_blend_file)
         if SystemUtils.IsRunningOnWindows():
@@ -99,7 +100,8 @@ class EasyStatesBlenderPlugin(DeadlinePlugin):
         render_agrs += " --python-expr \"" + _easystates_render_python_expr(
             _scene_state_id,
             self.GetStartFrame(),
-            self.GetEndFrame()
+            self.GetEndFrame(),
+            _datetime_override
         ).strip().replace('"', '\\"') + "\""
                 
         return render_agrs

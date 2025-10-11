@@ -149,7 +149,7 @@ def __main__(*args):
 def _get_settings_filename():
     return Path.Combine(ClientUtils.GetUsersSettingsDirectory(), "EasyStatesBlenderSettings.ini")
 
-def _submit_scene_state_job(state_name, frame_list, state_id, scene_file, batch_timestamp):
+def _submit_scene_state_job(state_name, frame_list, state_id, output_filepath, scene_file, batch_timestamp):
     """Submits a single job for the given scene state."""
     
     job_info_filename = Path.Combine(ClientUtils.GetDeadlineTempPath(), "blender_easystates_job_info.job")
@@ -182,6 +182,9 @@ def _submit_scene_state_job(state_name, frame_list, state_id, scene_file, batch_
     
     writer.WriteLine("Frames=%s" % frame_list)
     writer.WriteLine("ChunkSize=%s" % script_dialog.GetValue("ChunkSizeBox"))
+    
+    if output_filepath != "":
+        writer.WriteLine( "OutputFilename0=%s" % output_filepath )
             
     batch_name = script_dialog.GetValue("BatchNameBox")
     if batch_timestamp:
@@ -241,7 +244,7 @@ def _submit_button_pressed(*args):
         batch_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     
     for state in scene_states:
-        state_name, frame_list, state_id = state.strip().split("|")
+        state_name, frame_list, state_id, output_filepath = state.strip().split("|")
 
         if state == "":
             continue
@@ -249,7 +252,7 @@ def _submit_button_pressed(*args):
             script_dialog.ShowMessageBox("The scene state '%s' is not valid." % state, "Error")
             return
         
-        results = _submit_scene_state_job(state_name, frame_list, state_id, scene_file, batch_timestamp)
+        results = _submit_scene_state_job(state_name, frame_list, state_id, output_filepath, scene_file, batch_timestamp)
         if "The job was submitted successfully" in results:
             success += 1
         total += 1

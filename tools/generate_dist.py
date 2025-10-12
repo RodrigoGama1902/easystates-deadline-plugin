@@ -15,8 +15,8 @@ PLUGIN_SRC = BASE_DIR / "src/plugins/BlenderEasyStates"
 SCRIPTS_SRC = BASE_DIR / "src/scripts/Submission"
 SUBMISSION_CLIENT_SRC = BASE_DIR / r"src/submission/BlenderEasyStates/Client/EasyStatesDeadlineSubmitter"
 
-INSTALLATION_FILE = BASE_DIR / "INSTALLATION.md"
-README_FILE = BASE_DIR / "README.md"
+# INSTALLATION_FILE = BASE_DIR / "INSTALLATION.md"
+# README_FILE = BASE_DIR / "README.md"
 
 # ------------------------------
 # Utility Functions
@@ -66,8 +66,8 @@ def main():
             "submission/BlenderEasyStates/Client/EasyStatesDeadlineSubmitter.zip"
         )
         # Add INSTALLATION.md and README.md to zip root
-        add_file_to_zip(zipf, INSTALLATION_FILE)
-        add_file_to_zip(zipf, README_FILE)
+        # add_file_to_zip(zipf, INSTALLATION_FILE)
+        # add_file_to_zip(zipf, README_FILE)
 
     print(f"Created final zip: {FINAL_ZIP}")
 
